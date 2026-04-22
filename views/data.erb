@@ -1,0 +1,30 @@
+<% if @todays_events.empty? %>
+  <h2 class="no-events">There are no events here today.</h2>
+<% else %>
+  <div class="events-container <%= 'single' if @todays_events.length == 1 %>">
+    <% @todays_events.each do |event| %>
+      <div class="event-box">
+
+        <% event.each do |key, value| %>
+          <% next if value.nil? || value.to_s.strip.empty? %>
+          <% next if key == :fetched_at %>
+
+          <div class="row">
+            <span class="label">
+              <%= key.to_s.tr('_', ' ').capitalize %>:
+            </span>
+            <span class="value">
+              <% if value.is_a?(Date) %>
+                <%= value.strftime("%d.%m.%Y") %>
+              <% else %>
+                <%= value %>
+              <% end %>
+            </span>
+          </div>
+
+        <% end %>
+
+      </div>
+    <% end %>
+  </div>
+<% end %>

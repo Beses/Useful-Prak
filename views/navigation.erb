@@ -1,0 +1,20 @@
+<% rows = (@events.length / @cols.to_f).ceil %>
+<% qr_size = "calc(min(80vh / #{rows}, 80vw / #{@cols}) * 0.6 - #{@events.length < 4 ? 60 : 10}px)" %>
+
+<% @events.each_slice(@cols) do |row| %>
+  <div style="display:flex; justify-content: space-evenly; align-items: center;">
+    <% row.each do |site| %>
+      <div style="text-align:center; width:<%= (100.0 / @cols).round(1) %>%; box-sizing: border-box;">
+        <h2 style="font-weight:bold;"><%= site %></h2>
+        <% url = "#{request.base_url}#{@base}/trigger?site=#{URI.encode_www_form_component(site)}" %>
+        <% qrcode = RQRCode::QRCode.new(url) %>
+        <% svg = qrcode.as_svg(offset: 0, color: "000", module_size: 4) %>
+        <% svg = svg.sub(/width="(\d+)"/, 'viewBox="0 0 \1 \1"') %>
+        <% svg = svg.sub(/height="\d+"/, '') %>
+        <div style="width:<%= qr_size %>; height:<%= qr_size %>; margin: 0 auto;">
+          <%= svg %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>

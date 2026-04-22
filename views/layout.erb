@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="10">
+  <title>Event App</title>
+  <link rel="stylesheet" href="<%= @base %>/styles.css">
+  <!-- <link rel="stylesheet" href="styles.css"> -->
+
+</head>
+<body>
+
+  <nav id="nav-buttons">
+    <% @nav_buttons.each do |btn| %>
+      <div class="nav-button">
+        <strong><%= btn[:label] %></strong><br>
+        <img src="<%= btn[:action] %>.svg" alt="<%= btn[:action] %> QR Code" >
+      </div>
+    <% end %>
+  </nav>
+
+  <h1><%= @title %></h1>
+
+  <main>
+    <%= yield %>
+  </main>
+
+</body>
+</html>
