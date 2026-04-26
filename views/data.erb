@@ -1,4 +1,4 @@
-<% if @todays_events.empty? %>
+<% if @todays_events.nil? || @todays_events.empty? %>
   <h2 class="no-events">There are no events here today.</h2>
 <% else %>
   <div class="events-container <%= 'single' if @todays_events.length == 1 %>">

@@ -2,6 +2,9 @@
 
 require 'sinatra'
 require 'rqrcode'
+require 'net/http'
+require 'uri'
+require 'json'
 require_relative 'database'
 require_relative 'scraper'
 require_relative 'escalation'
@@ -11,8 +14,8 @@ $current_state = nil
 $children_of_current_state = nil
 $cols = 1
 $callback_addr = ""
-
-$back = ""
+$show_data = false
+$instance_id = 0
 
 $PORT = 9001
 $BASE = "/ports/#{$PORT}"
@@ -61,16 +64,22 @@ put '/update' do
   EscalationManager.schedule_abort($callback_addr)
   # The hierachy of all events as put in in cpee
   categories = JSON.parse(params['categories'])
-  instance_id = request.env['HTTP_CPEE_INSTANCE'].to_i
+  $instance_id = request.env['HTTP_CPEE_INSTANCE'].to_i
 
-  categories.each do |first_level, second_levels|
-    next if first_level == "main"
-    second_levels.each do |second_level|
-      DatabaseHelper.add_process_event(
-        instance_id,
-        first_level,
-        second_level
-      )
+  Thread.new do
+    categories.each do |first_level, second_levels|
+      next if first_level == "main"
+      second_levels.each do |second_level|
+        DatabaseHelper.add_process_event(
+          $instance_id,
+          first_level,
+          second_level
+        )
+      end
+    end
+
+    DB[:process_event_list].where(instance_id: $instance_id).each do |row|
+      ScraperManager.get_todays_events_for_site($instance_id, row[:second_level])
     end
   end
 
@@ -81,18 +90,16 @@ put '/update' do
   $current_state = params["state"]
 
   $children_of_current_state = categories[params["state"]]
-  pp $children_of_current_state
+  #pp $children_of_current_state
 
   #if no children exist, it is a leaf and the data.erb will be displayed
   $show_data = $children_of_current_state == nil ? true : false
 
   if $show_data
     $cols = 1
-    ScraperManager.get_todays_events_for_site(instance_id, $current_state)
+    #ScraperManager.get_todays_events_for_site($instance_id, $current_state)
     # Set the back button action to redirect to the direct parent of the current state
-    $back = DatabaseHelper.get_parent_levels(instance_id, $current_state)
   else
-    $back = "main"
     $cols = calc_columns($children_of_current_state.size)
   end
 
@@ -119,10 +126,13 @@ end
 get '/trigger_nav' do
   action = params[:action]
   
-  puts "action: #{action}"
-  puts "$back: #{$back}"
-  nav_addr = action == "back" ? $back : action
-  puts "nav_addr: #{nav_addr}"
+  #puts "action: #{action}"
+  #puts "$back: #{$back}"
+  nav_addr = action == "back" ? DatabaseHelper.get_parent_levels($instance_id, $current_state) : action
+  if nav_addr == nil
+    nav_addr = "main"
+  end
+  #puts "nav_addr: #{nav_addr}"
   uri = URI($callback_addr)
   http = Net::HTTP.new(uri.host, uri.port)
   http.use_ssl = (uri.scheme == "https")
@@ -130,7 +140,7 @@ get '/trigger_nav' do
   req = Net::HTTP::Put.new(uri)
   req["Content-Type"] = "application/json"
   req.body = { site: nav_addr }.to_json
-  puts "nav_address: #{nav_addr}"
+  #puts "nav_address: #{nav_addr}"
   res = http.request(req)
   pp res
 

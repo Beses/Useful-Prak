@@ -6,8 +6,6 @@ DB = Sequel.sqlite('data.db')
 DB.create_table? :events do
   String :site
   String :time
-  String :home_team
-  String :away_team
   Date :start_date
   Date :end_date
   String :title
@@ -26,8 +24,10 @@ DB.create_table? :process_event_list do
   Integer :instance_id
   String :first_level
   String :second_level
-  primary_key [:first_level, :second_level]
+  primary_key [:instance_id, :first_level, :second_level]
 end
+
+DB.add_index :process_event_list, [:instance_id, :second_level] unless DB.indexes(:process_event_list).key?(:process_event_list_instance_id_second_level_index)
 
 # Helper functions
 module DatabaseHelper
@@ -71,8 +71,8 @@ module DatabaseHelper
 
   def self.get_parent_levels(instance_id, second_level)
     DB[:process_event_list]
-      .where(instance_id: instance_id, second_level: second_level)
-      .get(:first_level)
+     .where(instance_id: instance_id, second_level: second_level)
+     .get(:first_level)
   end
 
   # miscellaneous methods for testing

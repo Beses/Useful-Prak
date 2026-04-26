@@ -186,23 +186,18 @@ module ScraperManager
         doc.css("div.EventListWrapper").each do |section|
           next unless section.at_css("div.TextEventDate")
           event_date = section.at_css("div.TextEventDate").text.strip.split(", ")[1].split(" @ ")
-          next unless event_date
           parsed_date = Date.strptime(event_date[0], "%d.%m.%Y")
           next unless parsed_date == Date.today
 
-          time = event_date[1]
+          time = event_date[1].gsub(" Uhr", "").strip
           event_name = section.at_css("h2.HeaderEventName > a").text.strip.split(" - ")[1].split(" vs. ")
           home_team = event_name[0]
           away_team = event_name[1]
 
-          puts parsed_date
-          puts time
-          puts home_team
-          puts away_team
+          next if home_team.nil?
+          title = "#{home_team} vs #{away_team}"
+          DatabaseHelper.add_event(site, time, start_date, end_date, title, subtitle)
         end
-        title = "#{home_team} vs #{away_team}" if title.nil?
-
-        DatabaseHelper.add_event(site, time, start_date, end_date, title, subtitle)
       end
 
 
@@ -216,9 +211,11 @@ module ScraperManager
 
           time_place = section.at_css("div.activity-list__text > span")
           next unless time_place
-          place = time_place.split(" | ")[1]
+          time_place_text = time_place.text.strip
+          parts = time_place_text.split("|")
+          place = parts[1]&.strip
           next unless place == site
-          time = time_place.split(" | ")[0]
+          time = parts[0]&.strip
 
           play_tag = section.at_css("div.activity-list__text span.h3")
           next unless play_tag
@@ -236,14 +233,16 @@ module ScraperManager
 
           place_time = section.at_css("div.schedule-act__details")
           next unless place_time
-          place = place_time.text.split(", ")[0].strip
-          time = place_time.text.split(", ")[1].strip
+          #place = place_time.text.split(",")[0].strip
+          time = place_time.text.split(",")[1].strip.split("–")[0].strip
 
-          title_tag = doc.at_css("h3.schedule-act__title headline--1 > a")
+          title_tag = section.at_css("h3.schedule-act__title.headline--1 > a")
           next unless title_tag
-          title = title_tag.text.strip
+          title_tag.css("span.visuallyhidden").remove
+          title = title_tag.text.gsub(/\s+/, ' ').strip
           DatabaseHelper.add_event(site, time, start_date, end_date, title, subtitle)
         end
+
 
       elsif site == "Prinzregententheater"
         doc.css("li.datarecord.datarecord--large").each do |section|
@@ -254,7 +253,7 @@ module ScraperManager
 
           time = date_time[1].text.strip
 
-          location_tag = section.at_css("div.flex-3 span").first
+          location_tag = section.at_css("div.flex-3 span")
           next unless location_tag
           next unless location_tag.text.strip.include?(site)
 
@@ -290,7 +289,6 @@ module ScraperManager
           next unless zeitraum_tag
           zeitraum = zeitraum_tag.text.strip
           if zeitraum.include?(" bis ")
-
             dates = zeitraum.split(" bis ")
             end_date   = Date.strptime(dates[1].strip, "%d.%m.%y")
             start_date = Date.strptime(dates[0].strip + end_date.year.to_s, "%d.%m.%Y")
@@ -304,7 +302,6 @@ module ScraperManager
             parsed_date = Date.strptime(zeitraum, "%d.%m.%y")
             next unless parsed_date == Date.today
           end
-	  puts "zeitraum richtig"
           link = section.at_css("a")
           title = link["href"].split("/").reject(&:empty?).last.gsub("-", " ").split.map(&:capitalize).join(" ") rescue nil
 
