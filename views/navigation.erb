@@ -1,5 +1,5 @@
 <% if @events.nil? || @events.empty? %>
-  <h2 class="no-events">Please (Re-)start the process in CPEE.</h2>
+  <h2 class="no-events">Please wait for a refresh of the page or (re-)start the process in CPEE.</h2>
 <% else %>
   <% rows = (@events.length / @cols.to_f).ceil %>
   <% qr_size = "calc(min(80vh / #{rows}, 80vw / #{@cols}) * 0.6 - #{@events.length < 4 ? 60 : 10}px)" %>
