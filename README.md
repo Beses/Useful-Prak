@@ -14,7 +14,7 @@ in order to run this you have to follow these steps:
    - Gets the data to be displayed from the database
 2. Cpee updates are sent to the /update route via put call
    - The categories hierachy is saved to the database
-   - The data for the new site is crawled using the scraper.rb
+   - The data for the new sites is crawled using the scraper.rb
    - The escalation timer and thread are started
 3. /trigger is used internally for all qr codes
 4. /trigger_nav is used internally for the three navigation buttons (Home, Main, Back)
